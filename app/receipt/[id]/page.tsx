@@ -5,6 +5,7 @@ import { formatDateTime, formatMoney, makeBillDisplayNumber } from "@/lib/utils"
 import PrintControls from "./PrintControls";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export default async function ReceiptPage({ params, searchParams }: {
   params: Promise<{ id: string }>;
@@ -12,10 +13,10 @@ export default async function ReceiptPage({ params, searchParams }: {
 }) {
   const { id } = await params;
   const query = await searchParams;
-  const bill = getBill(id);
+  const bill = await getBill(id);
   if (!bill) notFound();
   const safeBill = bill!;
-  const settings = getSettings();
+  const settings = await getSettings();
   const width = settings.printerWidthMm === 58 ? 58 : 80;
 
   return (

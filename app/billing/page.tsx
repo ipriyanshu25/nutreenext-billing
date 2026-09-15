@@ -4,11 +4,12 @@ import { getMenuItems, getNextDailyNumber } from "@/lib/queries";
 import { dateKeyInTimeZone } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-export default function BillingPage() {
-  const settings = getSettings();
-  const items = getMenuItems(true);
+export default async function BillingPage() {
+  const settings = await getSettings();
+  const items = await getMenuItems(true);
   const billDate = dateKeyInTimeZone(new Date(), settings.timezone);
-  const nextDailyNumber = getNextDailyNumber(billDate);
+  const nextDailyNumber = await getNextDailyNumber(billDate);
   return <BillingClient initialItems={items} settings={settings} initialBillDate={billDate} initialNextNumber={nextDailyNumber} />;
 }

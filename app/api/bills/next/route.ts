@@ -6,7 +6,14 @@ import { dateKeyInTimeZone } from "@/lib/utils";
 export const runtime = "nodejs";
 
 export async function GET() {
-  const settings = getSettings();
-  const date = dateKeyInTimeZone(new Date(), settings.timezone);
-  return NextResponse.json({ date, nextDailyNumber: getNextDailyNumber(date) });
+  try {
+    const settings = await getSettings();
+    const date = dateKeyInTimeZone(new Date(), settings.timezone);
+    return NextResponse.json({ date, nextDailyNumber: await getNextDailyNumber(date) });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unable to get next bill number." },
+      { status: 500 },
+    );
+  }
 }

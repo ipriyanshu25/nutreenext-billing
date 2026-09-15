@@ -1,57 +1,62 @@
-# NutreeNext Billing
+# NutreeNext Billing — PostgreSQL / Vercel Edition
 
-NutreeNext Billing is a restaurant POS/billing system built with **Next.js** and **SQLite**. It supports daily bill numbering, menu management, GST/non-GST bills, 58 mm / 80 mm thermal printing, bill history, expenses, and daily/monthly profit tracking.
+NutreeNext Billing is a Next.js restaurant billing system with:
 
-## Current UI
+- Dashboard for Today, Previous Day and Month
+- Sales, GST, bills, average bill, expenses and profit/loss
+- Payment breakdown and monthly sales graph
+- Item management with selling price and cost price
+- Generate Bill screen with search, category dropdown and checkout modal
+- Optional GST billing with CGST + SGST split
+- Daily bill numbering that restarts from 1 each business day
+- Complete bill/item history
+- 58 mm and 80 mm thermal receipt printing
+- PostgreSQL persistence suitable for Vercel
 
-The left sidebar contains only three working areas:
+This version no longer uses SQLite or `better-sqlite3`.
 
-- **Dashboard**
-- **Items**
-- **Generate Bill**
+## 1. Create a PostgreSQL database
 
-The UI uses a clean **white background with orange accents**.
+Recommended for Vercel: Neon PostgreSQL.
 
-### Dashboard
+Create a Neon database, then copy its **pooled PostgreSQL connection string**. It looks similar to:
 
-The Dashboard is period-based instead of showing every report at the same time.
+```env
+postgresql://USER:PASSWORD@HOST-pooler.REGION.aws.neon.tech/neondb?sslmode=require
+```
 
-- **Today** shows today's sales, profit/loss, bills, average bill, payment mix, top items, expenses and bill records.
-- **Previous Day** lets you pick any earlier date and shows the same day-level report.
-- **Month** lets you pick a month and shows monthly sales, profit/loss, bills, average bill, a daily sales graph, top items and daily performance.
-- Use **+ Expense** to record operating expenses.
-- Use **Settings** for restaurant details, GSTIN, GST default and thermal paper width.
+## 2. Create `.env.local`
 
-### Items
+Copy `.env.example` to `.env.local` and set:
 
-Use Items to:
+```env
+DATABASE_URL="YOUR_POSTGRESQL_CONNECTION_STRING"
+BUSINESS_TZ=Asia/Kolkata
+```
 
-- Add a new dish
-- Search/filter menu items
-- Change selling price
-- Enter cost price for profit calculations
-- Edit Product IDs/categories
-- Hide or reactivate an item
+Never commit `.env.local` to GitHub.
 
-### Generate Bill
-
-- Search menu items by name or Product ID.
-- Filter by category with the dropdown.
-- Add multiple items and change quantities directly in the list.
-- Click **Review & Print Bill** to open the bill in a modal.
-- Customer name, mobile, payment method and GST are entered in that modal.
-- The modal body scrolls independently while totals and **Save & Print Bill** stay accessible at the bottom.
-
-## 1. Requirements
-
-Install Node.js 20+ (Node.js 22 LTS is recommended).
-
-## 2. Setup
-
-Extract the project and open a terminal in the project folder:
+## 3. Install dependencies
 
 ```bash
 npm install
+```
+
+## 4. Initialize the database
+
+Recommended before the first run:
+
+```bash
+npm run db:init
+```
+
+This creates the PostgreSQL tables, default NutreeNext business settings and the menu items included with the project.
+
+The application also contains a safe idempotent first-request initializer, so missing tables can be created automatically when the app first reaches PostgreSQL. Running `npm run db:init` is still recommended because it confirms the database credentials before deployment.
+
+## 5. Run locally
+
+```bash
 npm run dev
 ```
 
@@ -61,79 +66,103 @@ Open:
 http://localhost:3000
 ```
 
-Optional `.env.local`:
+## 6. Production build test
 
-```env
-DB_PATH=./data/nutreenext.sqlite
-BUSINESS_TZ=Asia/Kolkata
+Before deploying:
+
+```bash
+npm run build
+npm start
 ```
 
-On Windows you can also use `start-windows.bat` after dependencies are installed.
+## 7. Deploy to Vercel
 
-## 3. Database
+Push this project to GitHub and import it into Vercel.
 
-The current version uses **SQLite**. No separate database server is required.
-
-The app automatically creates:
+In **Vercel → Project → Settings → Environment Variables**, add:
 
 ```text
-data/nutreenext.sqlite
+DATABASE_URL = your pooled PostgreSQL connection string
+BUSINESS_TZ = Asia/Kolkata
 ```
 
-It creates the tables and seeds the NutreeNext menu items included in this project.
+Add them at least to **Production**. Adding them to Preview and Development is also useful.
 
-Back up `data/nutreenext.sqlite` regularly. PostgreSQL is the recommended later upgrade if you add multiple billing counters, multiple branches or a cloud-hosted central database.
+If your GitHub repository contains a parent folder and this project is inside `nutreenext-billing`, set Vercel's **Root Directory** to that folder. The Vercel root must be the folder containing `package.json`.
 
-## 4. Billing flow
+Redeploy after saving the environment variables.
 
-1. Open **Generate Bill**.
-2. Search/filter items.
-3. Add dishes and quantities.
-4. Click **Review & Print Bill**.
-5. Enter optional customer details.
-6. Choose Cash, UPI or Card.
-7. Enable GST only when required.
-8. Click **Save & Print Bill**.
-9. The receipt page opens and triggers the browser print dialog.
-10. Use **Generate Next Bill** after printing.
+## Database tables
 
-Daily bill numbering starts from `#1` each new day. The final number is assigned when the bill is saved.
+The project uses:
 
-## 5. GST
+- `menu_items`
+- `bills`
+- `bill_items`
+- `expenses`
+- `business_settings`
+- `daily_bill_counters`
 
-The system supports:
+`daily_bill_counters` makes bill numbering safe when multiple Vercel requests happen at the same time.
 
-- No GST
-- 5% total GST → CGST 2.5% + SGST 2.5%
-- 18% total GST → CGST 9% + SGST 9%
+## Bill numbering
 
-GST billing is blocked until a GSTIN is saved in **Dashboard → Settings**.
-
-Confirm the GST treatment that applies to your restaurant with your accountant/CA before production use.
-
-## 6. Profit / loss
-
-Profit is calculated as:
+Each business day starts again from Bill #1. Example:
 
 ```text
-Sales before GST - Item Cost - Other Expenses
+2026-09-16: #1, #2, #3 ...
+2026-09-17: #1, #2, #3 ...
 ```
 
-Enter each dish's cost price on the **Items** page for meaningful profit figures.
+The final number is assigned inside a PostgreSQL transaction when the bill is saved, so two simultaneous bills cannot normally receive the same number.
 
-## 7. Thermal printer
+## GST
 
-A fresh database defaults to **58 mm** paper because the project is configured for a compact portable thermal printer. You can switch between **58 mm** and **80 mm** in **Dashboard → Settings**.
+The bill screen allows GST to be turned on/off per bill. The selected total GST rate is divided equally into CGST and SGST.
 
-When printing:
+- 5% total → 2.5% CGST + 2.5% SGST
+- 18% total → 9% CGST + 9% SGST
 
-- Select the installed/paired thermal printer.
-- Use 100% / actual-size scale.
-- Disable browser headers and footers.
-- Use minimal/default printer margins.
+Enter the restaurant GSTIN in **Dashboard → Settings** before creating GST bills.
 
-## 8. Production notes
+Confirm the correct GST treatment for your restaurant with your tax professional before production use.
 
-SQLite is suitable when the application and database run on one restaurant computer or a server with persistent storage. Avoid storing the SQLite database on an ephemeral/serverless filesystem.
+## Thermal printing
 
-For a future multi-counter/cloud version, migrate the data layer to PostgreSQL while keeping most of the current UI and billing workflow.
+Go to **Dashboard → Settings** and select:
+
+- 58 mm for small portable thermal printers
+- 80 mm for 80 mm receipt printers
+
+Printing is done by the browser through the computer's installed USB/Bluetooth printer. Vercel does not need direct access to the physical printer.
+
+## Profit / loss
+
+The dashboard calculation is:
+
+```text
+Profit = Sales before GST - Item Cost - Other Expenses
+```
+
+GST collected is displayed separately and is not counted as restaurant sales profit.
+
+For accurate profit figures, enter the real cost price of every dish on the Items page.
+
+## Important differences from the old SQLite version
+
+Removed:
+
+- `better-sqlite3`
+- `DB_PATH`
+- `data/nutreenext.sqlite`
+- local database writes
+- SQLite reset script
+
+Added:
+
+- `pg`
+- `DATABASE_URL`
+- PostgreSQL transactions
+- concurrency-safe daily bill counters
+- `npm run db:init`
+- Vercel-compatible persistent database storage

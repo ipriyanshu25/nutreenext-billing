@@ -14,6 +14,7 @@ import {
 } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 type DashboardView = "today" | "day" | "month";
 
@@ -98,7 +99,7 @@ export default async function DashboardPage({
   searchParams: Promise<{ view?: string; day?: string; month?: string }>;
 }) {
   const params = await searchParams;
-  const settings = getSettings();
+  const settings = await getSettings();
   const today = dateKeyInTimeZone(new Date(), settings.timezone);
   const currentMonth = monthKeyInTimeZone(new Date(), settings.timezone);
 
@@ -110,7 +111,7 @@ export default async function DashboardPage({
 
   const selectedDay = view === "today" ? today : sanitizeDateKey(params.day, today);
   const selectedMonth = sanitizeMonthKey(params.month, currentMonth);
-  const data = getDashboardData(selectedDay, selectedMonth);
+  const data = await getDashboardData(selectedDay, selectedMonth);
 
   const summary = view === "month" ? data.month : data.day;
   const profitPaise = summary.subtotalPaise - summary.cogsPaise - summary.expensePaise;
