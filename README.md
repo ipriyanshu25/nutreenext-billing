@@ -2,6 +2,7 @@
 
 NutreeNext Billing is a Next.js restaurant billing system with:
 
+- Login protection before the dashboard or billing pages can be opened
 - Dashboard for Today, Previous Day and Month
 - Sales, GST, bills, average bill, expenses and profit/loss
 - Payment breakdown and monthly sales graph
@@ -12,29 +13,34 @@ NutreeNext Billing is a Next.js restaurant billing system with:
 - Complete bill/item history
 - 58 mm and 80 mm thermal receipt printing
 - PostgreSQL persistence suitable for Vercel
+- Idempotent menu synchronization: missing menu items are added and existing items are skipped
 
-This version no longer uses SQLite or `better-sqlite3`.
+This version uses PostgreSQL and does not use SQLite or `better-sqlite3`.
 
-## 1. Create a PostgreSQL database
+## 1. Requirements
 
-Recommended for Vercel: Neon PostgreSQL.
+- Node.js 20.9 or newer
+- A PostgreSQL database (Neon PostgreSQL works well with Vercel)
 
-Create a Neon database, then copy its **pooled PostgreSQL connection string**. It looks similar to:
-
-```env
-postgresql://USER:PASSWORD@HOST-pooler.REGION.aws.neon.tech/neondb?sslmode=require
-```
-
-## 2. Create `.env.local`
+## 2. Environment variables
 
 Copy `.env.example` to `.env.local` and set:
 
 ```env
 DATABASE_URL="YOUR_POSTGRESQL_CONNECTION_STRING"
 BUSINESS_TZ=Asia/Kolkata
+AUTH_SECRET="A_LONG_RANDOM_SECRET"
+```
+
+Generate a secure `AUTH_SECRET` with:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
 Never commit `.env.local` to GitHub.
+
+For Vercel, add `DATABASE_URL`, `BUSINESS_TZ` and `AUTH_SECRET` in **Project → Settings → Environment Variables** and redeploy.
 
 ## 3. Install dependencies
 
@@ -42,19 +48,49 @@ Never commit `.env.local` to GitHub.
 npm install
 ```
 
-## 4. Initialize the database
-
-Recommended before the first run:
+## 4. Initialize / update the database
 
 ```bash
 npm run db:init
 ```
 
-This creates the PostgreSQL tables, default NutreeNext business settings and the menu items included with the project.
+This safely creates missing tables, creates the login credential record if it does not already exist, and synchronizes the packaged menu.
 
-The application also contains a safe idempotent first-request initializer, so missing tables can be created automatically when the app first reaches PostgreSQL. Running `npm run db:init` is still recommended because it confirms the database credentials before deployment.
+The menu sync is intentionally non-destructive: an item already present with the same name or Product ID is skipped, so its current price/cost/active state is not overwritten.
 
-## 5. Run locally
+To run only the menu synchronization later:
+
+```bash
+npm run db:sync-menu
+```
+
+## 5. Login
+
+Opening `/`, `/dashboard`, `/items`, `/billing`, receipt pages or protected APIs requires authentication. An unauthenticated browser is redirected to `/login`; a successful login redirects to the dashboard (or the originally requested protected page).
+
+The browser session uses an HTTP-only signed cookie and expires after 12 hours. The sidebar also contains a **Sign out** button.
+
+### Change the login ID/password at any time
+
+Recommended interactive command:
+
+```bash
+npm run auth:set -- --username your-new-login-id
+```
+
+The script securely prompts for the new password and confirmation. It updates the `admin_credentials` row in PostgreSQL and also updates the packaged default credential hash for future fresh databases when the project directory is writable.
+
+You can also pass a password directly (less private because it may remain in shell history):
+
+```bash
+npm run auth:set -- --username your-new-login-id --password "YourNewStrongPassword"
+```
+
+Password rules: 8–256 characters. Login IDs may use letters, numbers, `.`, `_`, `@` and `-`.
+
+If the app is deployed against the same PostgreSQL database, running this script locally with that database's `DATABASE_URL` changes the deployed login as well. Existing already-signed-in sessions can remain valid until logout or session expiry.
+
+## 6. Run locally
 
 ```bash
 npm run dev
@@ -66,31 +102,28 @@ Open:
 http://localhost:3000
 ```
 
-## 6. Production build test
+You will be sent to the login page first.
 
-Before deploying:
+## 7. Production build test
 
 ```bash
 npm run build
 npm start
 ```
 
-## 7. Deploy to Vercel
+## 8. Deploy to Vercel
 
-Push this project to GitHub and import it into Vercel.
+Push this project to GitHub and import it into Vercel. If the repository contains a parent directory, set Vercel's **Root Directory** to the folder containing this `package.json`.
 
-In **Vercel → Project → Settings → Environment Variables**, add:
+Configure these environment variables in Vercel:
 
 ```text
 DATABASE_URL = your pooled PostgreSQL connection string
 BUSINESS_TZ = Asia/Kolkata
+AUTH_SECRET = a long random secret
 ```
 
-Add them at least to **Production**. Adding them to Preview and Development is also useful.
-
-If your GitHub repository contains a parent folder and this project is inside `nutreenext-billing`, set Vercel's **Root Directory** to that folder. The Vercel root must be the folder containing `package.json`.
-
-Redeploy after saving the environment variables.
+Then redeploy.
 
 ## Database tables
 
@@ -102,8 +135,9 @@ The project uses:
 - `expenses`
 - `business_settings`
 - `daily_bill_counters`
+- `admin_credentials`
 
-`daily_bill_counters` makes bill numbering safe when multiple Vercel requests happen at the same time.
+`daily_bill_counters` makes bill numbering safe when multiple requests happen at the same time.
 
 ## Bill numbering
 
@@ -114,7 +148,7 @@ Each business day starts again from Bill #1. Example:
 2026-09-17: #1, #2, #3 ...
 ```
 
-The final number is assigned inside a PostgreSQL transaction when the bill is saved, so two simultaneous bills cannot normally receive the same number.
+The final number is assigned inside a PostgreSQL transaction when the bill is saved.
 
 ## GST
 
@@ -123,18 +157,11 @@ The bill screen allows GST to be turned on/off per bill. The selected total GST 
 - 5% total → 2.5% CGST + 2.5% SGST
 - 18% total → 9% CGST + 9% SGST
 
-Enter the restaurant GSTIN in **Dashboard → Settings** before creating GST bills.
-
-Confirm the correct GST treatment for your restaurant with your tax professional before production use.
+Enter the restaurant GSTIN in **Dashboard → Settings** before creating GST bills. Confirm the correct GST treatment for the restaurant with a tax professional before production use.
 
 ## Thermal printing
 
-Go to **Dashboard → Settings** and select:
-
-- 58 mm for small portable thermal printers
-- 80 mm for 80 mm receipt printers
-
-Printing is done by the browser through the computer's installed USB/Bluetooth printer. Vercel does not need direct access to the physical printer.
+Go to **Dashboard → Settings** and select 58 mm or 80 mm. Printing is done by the browser through the computer's installed printer.
 
 ## Profit / loss
 
@@ -144,25 +171,4 @@ The dashboard calculation is:
 Profit = Sales before GST - Item Cost - Other Expenses
 ```
 
-GST collected is displayed separately and is not counted as restaurant sales profit.
-
-For accurate profit figures, enter the real cost price of every dish on the Items page.
-
-## Important differences from the old SQLite version
-
-Removed:
-
-- `better-sqlite3`
-- `DB_PATH`
-- `data/nutreenext.sqlite`
-- local database writes
-- SQLite reset script
-
-Added:
-
-- `pg`
-- `DATABASE_URL`
-- PostgreSQL transactions
-- concurrency-safe daily bill counters
-- `npm run db:init`
-- Vercel-compatible persistent database storage
+GST collected is displayed separately. For accurate profit figures, enter the real cost price of each dish on the Items page.

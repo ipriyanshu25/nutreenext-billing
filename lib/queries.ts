@@ -119,6 +119,30 @@ export async function getBill(id: string): Promise<BillRecord | null> {
   return { ...mapBill(row), items: itemResult.rows.map(mapBillLine) };
 }
 
+export async function deleteBill(
+  id: string,
+): Promise<{ id: string; billDate: string; dailyNumber: number } | null> {
+  await ensureDatabase();
+
+  const result = await queryDb<{ id: string; bill_date: string; daily_number: string | number }>(
+    `
+      DELETE FROM bills
+      WHERE id = $1
+      RETURNING id, bill_date, daily_number
+    `,
+    [id],
+  );
+
+  const row = result.rows[0];
+  if (!row) return null;
+
+  return {
+    id: String(row.id),
+    billDate: String(row.bill_date),
+    dailyNumber: Number(row.daily_number),
+  };
+}
+
 export type BillListRecord = Omit<BillRecord, "items"> & { itemCount: number };
 
 export async function getBillsForDate(dateKey: string, limit = 100): Promise<BillListRecord[]> {

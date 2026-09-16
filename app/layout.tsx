@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import AppHeader from "@/components/AppHeader";
+import AppShell from "@/components/AppShell";
 
 export const metadata: Metadata = {
   title: "NutreeNext Billing",
@@ -11,8 +11,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en">
       <body>
-        <AppHeader />
-        <div className="app-main">{children}</div>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

@@ -72,4 +72,12 @@ CREATE TABLE IF NOT EXISTS daily_bill_counters (
   last_number INTEGER NOT NULL CHECK(last_number >= 0)
 );
 
+CREATE TABLE IF NOT EXISTS admin_credentials (
+  id INTEGER PRIMARY KEY CHECK(id = 1),
+  username TEXT NOT NULL UNIQUE,
+  password_salt TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
 CREATE SEQUENCE IF NOT EXISTS menu_product_seq START WITH 1 INCREMENT BY 1;

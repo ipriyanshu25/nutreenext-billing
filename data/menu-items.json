@@ -1,0 +1,95 @@
+[
+  { "productId": "MOM001", "name": "Veg Momos – 6 Pc", "category": "Momos", "priceRupees": 69 },
+  { "productId": "MOM002", "name": "Paneer Momos – 6 Pc", "category": "Momos", "priceRupees": 99 },
+  { "productId": "MOM003", "name": "Kurkure Momos – 6 Pc", "category": "Momos", "priceRupees": 99 },
+  { "productId": "MOM004", "name": "Fried Momos – 6 Pc", "category": "Momos", "priceRupees": 79 },
+  { "productId": "MOM005", "name": "Paneer Cheese Momos – 6 Pc", "category": "Momos", "priceRupees": 129 },
+  { "productId": "MOM006", "name": "NutreeNext Special Momos – 8 Pc", "category": "Momos", "priceRupees": 139 },
+
+  { "productId": "SAN001", "name": "Grilled Sandwich", "category": "Sandwich", "priceRupees": 69 },
+  { "productId": "SAN002", "name": "Grilled Mint Sandwich", "category": "Sandwich", "priceRupees": 79 },
+  { "productId": "SAN003", "name": "Grilled Cheese Sandwich", "category": "Sandwich", "priceRupees": 99 },
+  { "productId": "SAN004", "name": "Grilled Paneer Cheese Sandwich", "category": "Sandwich", "priceRupees": 139 },
+
+  { "productId": "FRI001", "name": "French Fries", "category": "Fries Bucket", "priceRupees": 69 },
+  { "productId": "FRI002", "name": "Peri Peri Masala Fries", "category": "Fries Bucket", "priceRupees": 79 },
+  { "productId": "FRI003", "name": "Baked Peri Peri Tandoori Fries", "category": "Fries Bucket", "priceRupees": 129 },
+  { "productId": "FRI004", "name": "Baked Cheese Fries", "category": "Fries Bucket", "priceRupees": 149 },
+
+  { "productId": "SHA001", "name": "Vanilla Shake", "category": "Shakes", "priceRupees": 75 },
+  { "productId": "SHA002", "name": "Strawberry Shake", "category": "Shakes", "priceRupees": 85 },
+  { "productId": "SHA003", "name": "Mango Shake", "category": "Shakes", "priceRupees": 89 },
+  { "productId": "SHA004", "name": "Pineapple Shake", "category": "Shakes", "priceRupees": 99 },
+  { "productId": "SHA005", "name": "Blueberry Shake", "category": "Shakes", "priceRupees": 109 },
+
+  { "productId": "PMS001", "name": "Kitkat Shake", "category": "Premium Milkshakes", "priceRupees": 79 },
+  { "productId": "PMS002", "name": "Oreo Shake", "category": "Premium Milkshakes", "priceRupees": 89 },
+  { "productId": "PMS003", "name": "Biscoff Shake", "category": "Premium Milkshakes", "priceRupees": 119 },
+
+  { "productId": "ROL001", "name": "Veg Roll", "category": "Rolls", "priceRupees": 69 },
+  { "productId": "ROL002", "name": "Veg Frankie Roll", "category": "Rolls", "priceRupees": 79 },
+  { "productId": "ROL003", "name": "Paneer Roll", "category": "Rolls", "priceRupees": 99 },
+  { "productId": "ROL004", "name": "NutreeNext Special Veg Kathi Roll", "category": "Rolls", "priceRupees": 119 },
+
+  { "productId": "BUR001", "name": "Veg Burger", "category": "Burgers", "priceRupees": 59 },
+  { "productId": "BUR002", "name": "Tandoori Burger", "category": "Burgers", "priceRupees": 69 },
+  { "productId": "BUR003", "name": "Grilled Cheese Burger", "category": "Burgers", "priceRupees": 89 },
+  { "productId": "BUR004", "name": "Mint Burger", "category": "Burgers", "priceRupees": 59 },
+  { "productId": "BUR005", "name": "Big Double Tikki Burger", "category": "Burgers", "priceRupees": 99 },
+  { "productId": "BUR006", "name": "Big Paneer Burger", "category": "Burgers", "priceRupees": 119 },
+
+  { "productId": "STK001", "name": "Baby Corn Stick – 6 Pc", "category": "Special Sticks", "priceRupees": 199 },
+  { "productId": "STK002", "name": "Mushroom Duplex – 6 Pc", "category": "Special Sticks", "priceRupees": 229 },
+
+  { "productId": "WAF001", "name": "Chocolate Waffle", "category": "Waffles", "priceRupees": 59 },
+  { "productId": "WAF002", "name": "Icy Vanilla Waffle", "category": "Waffles", "priceRupees": 69 },
+  { "productId": "WAF003", "name": "Oreo Waffle", "category": "Waffles", "priceRupees": 79 },
+  { "productId": "WAF004", "name": "Biscoff Waffle", "category": "Waffles", "priceRupees": 79 },
+  { "productId": "WAF005", "name": "Choco-Chip Waffle", "category": "Waffles", "priceRupees": 69 },
+  { "productId": "WAF006", "name": "Strawberry Waffle", "category": "Waffles", "priceRupees": 79 },
+  { "productId": "WAF007", "name": "Mango Waffle", "category": "Waffles", "priceRupees": 89 },
+  { "productId": "WAF008", "name": "Pineapple Waffle", "category": "Waffles", "priceRupees": 79 },
+  { "productId": "WAF009", "name": "Blueberry Waffle", "category": "Waffles", "priceRupees": 99 },
+
+  { "productId": "COF001", "name": "Spanish Hot Coffee", "category": "Coffee", "priceRupees": 49 },
+  { "productId": "COF002", "name": "Special Cold Coffee", "category": "Coffee", "priceRupees": 89 },
+  { "productId": "COF003", "name": "Cold Coffee with Ice Cream", "category": "Coffee", "priceRupees": 119 },
+
+  { "productId": "NOD001", "name": "Veg Noodles", "category": "Noodles", "priceRupees": 79 },
+  { "productId": "NOD002", "name": "Veg Hakka Noodles", "category": "Noodles", "priceRupees": 89 },
+  { "productId": "NOD003", "name": "Chilli Garlic Noodles", "category": "Noodles", "priceRupees": 99 },
+  { "productId": "NOD004", "name": "Schezwan Noodles", "category": "Noodles", "priceRupees": 89 },
+
+  { "productId": "RIC001", "name": "Veg Fried Rice", "category": "Rice", "priceRupees": 79 },
+  { "productId": "RIC002", "name": "Chilli Garlic Rice", "category": "Rice", "priceRupees": 89 },
+  { "productId": "RIC003", "name": "Paneer Fried Rice", "category": "Rice", "priceRupees": 99 },
+
+  { "productId": "CHN001", "name": "Veg Gravy Manchurian", "category": "Manchurian & Chinese", "priceRupees": 119 },
+  { "productId": "CHN002", "name": "Chilli Paneer", "category": "Manchurian & Chinese", "priceRupees": 129 },
+  { "productId": "CHN003", "name": "Chilli Mushroom", "category": "Manchurian & Chinese", "priceRupees": 139 },
+
+  { "productId": "SOU001", "name": "Veg Manchurian Soup", "category": "Chinese Soups", "priceRupees": 65 },
+  { "productId": "SOU002", "name": "Hot & Sour Soup", "category": "Chinese Soups", "priceRupees": 75 },
+  { "productId": "SOU003", "name": "Tomato Soup", "category": "Chinese Soups", "priceRupees": 69 },
+  { "productId": "SOU004", "name": "Sweet Corn Soup", "category": "Chinese Soups", "priceRupees": 79 },
+
+  { "productId": "CHP001", "name": "Chilli Potato", "category": "Chilli Potato", "priceRupees": 99 },
+  { "productId": "CHP002", "name": "Honey Chilli Potato", "category": "Chilli Potato", "priceRupees": 109 },
+
+  { "productId": "PAS001", "name": "Red Sauce Pasta", "category": "Pasta", "priceRupees": 109 },
+  { "productId": "PAS002", "name": "White Sauce Pasta", "category": "Pasta", "priceRupees": 139 },
+  { "productId": "PAS003", "name": "Tomato Spinach Pasta", "category": "Pasta", "priceRupees": 129 },
+  { "productId": "PAS004", "name": "Cheese Pasta", "category": "Pasta", "priceRupees": 180 },
+
+  { "productId": "MAG001", "name": "Plain Maggie", "category": "Maggie", "priceRupees": 59 },
+  { "productId": "MAG002", "name": "Veggie Butter Maggie", "category": "Maggie", "priceRupees": 79 },
+  { "productId": "MAG003", "name": "Peri Peri Fry Maggie", "category": "Maggie", "priceRupees": 69 },
+  { "productId": "MAG004", "name": "Cheese Maggie", "category": "Maggie", "priceRupees": 99 },
+  { "productId": "MAG005", "name": "Butter Paneer Maggie", "category": "Maggie", "priceRupees": 129 },
+
+  { "productId": "UFO001", "name": "Classic Veg UFO", "category": "UFO Burgers", "priceRupees": 79 },
+  { "productId": "UFO002", "name": "Cheese UFO", "category": "UFO Burgers", "priceRupees": 99 },
+  { "productId": "UFO003", "name": "Spicy Paneer UFO", "category": "UFO Burgers", "priceRupees": 119 },
+  { "productId": "UFO004", "name": "Double Cheese UFO", "category": "UFO Burgers", "priceRupees": 139 },
+  { "productId": "UFO005", "name": "Marathi Maska UFO 2 Burgers Combo", "category": "UFO Burgers", "priceRupees": 199 }
+]

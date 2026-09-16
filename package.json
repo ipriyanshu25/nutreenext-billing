@@ -9,7 +9,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "db:init": "node --env-file=.env.local scripts/init-db.mjs"
+    "db:init": "node --env-file=.env.local scripts/init-db.mjs",
+    "db:sync-menu": "node --env-file=.env.local scripts/sync-menu.mjs",
+    "auth:set": "node --env-file=.env.local scripts/set-login.mjs"
   },
   "dependencies": {
     "next": "16.2.12",

@@ -27,8 +27,25 @@ function BillIcon() {
   );
 }
 
+
+function LogoutIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M10 4H5v16h5v-2H7V6h3V4Zm5.6 4.6L14.2 10H9v2h5.2l1.4 1.4 1.4-1.4-4-4-1.4 1.4L13.2 11H9v2h4.2l-1.6 1.6L13 16l4-4-4-4-1.4 1.4L13.2 11H15l.6-.6Z" />
+    </svg>
+  );
+}
+
 export default function AppHeader() {
   const pathname = usePathname();
+
+  async function signOut() {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      window.location.assign("/login");
+    }
+  }
 
   return (
     <aside className="app-sidebar no-print">
@@ -55,8 +72,19 @@ export default function AppHeader() {
           <span className="side-nav-icon"><BillIcon /></span>
           <span>Generate Bill</span>
         </Link>
+
+        <button className="mobile-signout" type="button" onClick={signOut}>
+          <span className="side-nav-icon"><LogoutIcon /></span>
+          <span>Sign out</span>
+        </button>
       </nav>
 
+      <div className="sidebar-bottom">
+        <button className="sidebar-logout" type="button" onClick={signOut}>
+          Sign out
+        </button>
+        <small>NutreeNext secure billing session</small>
+      </div>
     </aside>
   );
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import DashboardActions from "./DashboardActions";
 import DashboardPeriodFilter from "./DashboardPeriodFilter";
+import BillDeleteButton from "./BillDeleteButton";
 import { getDashboardData } from "@/lib/queries";
 import { getSettings } from "@/lib/db";
 import {
@@ -356,7 +357,12 @@ export default async function DashboardPage({
                       <td>{bill.paymentMethod}</td>
                       <td>{bill.gstEnabled ? `${bill.gstRate}%` : "No GST"}</td>
                       <td className="number"><b>{formatMoney(bill.totalPaise)}</b></td>
-                      <td className="number"><Link className="table-link" href={`/receipt/${bill.id}`}>View</Link></td>
+                      <td className="number">
+                        <div className="bill-row-actions">
+                          <Link className="table-link" href={`/receipt/${bill.id}`}>View</Link>
+                          <BillDeleteButton billId={bill.id} billNumber={bill.dailyNumber} />
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
