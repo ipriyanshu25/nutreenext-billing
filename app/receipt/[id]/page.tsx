@@ -22,7 +22,7 @@ export default async function ReceiptPage({ params, searchParams }: {
   return (
     <main className="receipt-page">
       <style>{`@page { size: ${width}mm auto; margin: 0; } @media print { html, body { width: ${width}mm; } }`}</style>
-      <PrintControls autoPrint={query.autoprint === "1"} />
+      <PrintControls autoPrint={query.autoprint === "1"} billId={safeBill.id} />
       <article className="receipt-sheet" style={{ width: `${width}mm`, maxWidth: "100%" }}>
         <div className="receipt-logo">
           <h1>{settings.restaurantName}</h1>

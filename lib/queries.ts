@@ -145,6 +145,16 @@ export async function deleteBill(
 
 export type BillListRecord = Omit<BillRecord, "items"> & { itemCount: number };
 
+export async function getAllBills(): Promise<BillListRecord[]> {
+  const result = await queryDb<Record<string, unknown>>(`
+    SELECT b.*,
+      (SELECT COALESCE(SUM(quantity), 0) FROM bill_items bi WHERE bi.bill_id = b.id) AS item_count
+    FROM bills b
+    ORDER BY bill_date DESC, daily_number DESC
+  `);
+  return result.rows.map((row) => ({ ...mapBill(row), itemCount: Number(row.item_count) }));
+}
+
 export async function getBillsForDate(dateKey: string, limit = 100): Promise<BillListRecord[]> {
   const safeLimit = Math.max(1, Math.min(500, Math.floor(limit)));
   const result = await queryDb<Record<string, unknown>>(
@@ -160,6 +170,122 @@ export async function getBillsForDate(dateKey: string, limit = 100): Promise<Bil
   );
 
   return result.rows.map((row: Record<string, unknown>) => ({ ...mapBill(row), itemCount: Number(row.item_count) }));
+}
+
+export type UpdateBillInput = {
+  customerName: string;
+  customerPhone: string;
+  paymentMethod: string;
+  gstEnabled: boolean;
+  gstRate: number;
+  items: Array<{ lineId?: number; itemId?: number; quantity: number }>;
+};
+
+export async function updateBill(id: string, input: UpdateBillInput) {
+  if (!["Cash", "UPI", "Card"].includes(input.paymentMethod)) {
+    throw new Error("Payment method is invalid.");
+  }
+  const keys = new Set<string>();
+  if (!input.items.length) throw new Error("Add at least one item to the bill.");
+  for (const line of input.items) {
+    const reference = line.lineId ?? line.itemId;
+    if (
+      (line.lineId == null) === (line.itemId == null) ||
+      !Number.isSafeInteger(reference) || reference! <= 0 ||
+      !Number.isSafeInteger(line.quantity) || line.quantity <= 0
+    ) throw new Error("Add valid items and quantities.");
+    const key = `${line.lineId == null ? "item" : "line"}:${reference}`;
+    if (keys.has(key)) throw new Error("Duplicate bill items are not allowed.");
+    keys.add(key);
+  }
+  const settings = await getSettings();
+  if (input.gstEnabled && !settings.gstin.trim()) throw new Error("Set your GSTIN before saving a GST invoice.");
+  if (input.gstEnabled && ![5, 18].includes(input.gstRate)) throw new Error("GST rate must be 5% or 18%.");
+
+  const client = await getDbPool().connect();
+  try {
+    await client.query("BEGIN");
+    // Serialize edits to this bill without changing its identity, date or number.
+    const billResult = await client.query<Record<string, unknown>>(
+      "SELECT * FROM bills WHERE id = $1 FOR UPDATE", [id],
+    );
+    if (!billResult.rows[0]) {
+      await client.query("ROLLBACK");
+      return null;
+    }
+    const existing = await client.query<Record<string, unknown>>(
+      "SELECT * FROM bill_items WHERE bill_id = $1 ORDER BY id ASC", [id],
+    );
+    const originalLines = new Map(existing.rows.map((row) => {
+      const line = mapBillLine(row);
+      return [line.id, line] as const;
+    }));
+    const newItemIds = input.items.flatMap((line) => line.itemId == null ? [] : [line.itemId]);
+    const menuResult = await client.query<Record<string, unknown>>(
+      "SELECT * FROM menu_items WHERE id = ANY($1::int[]) AND is_active = 1", [newItemIds],
+    );
+    const menu = new Map(menuResult.rows.map((row) => {
+      const item = mapMenuRow(row);
+      return [item.id, item] as const;
+    }));
+    const lines = input.items.map((entry) => {
+      if (entry.lineId != null) {
+        const original = originalLines.get(entry.lineId);
+        if (!original) throw new Error("A bill item is no longer available. Reload this bill and try again.");
+        // Keep historical prices and costs, including items removed from the menu.
+        return { ...original, quantity: entry.quantity, lineTotalPaise: original.unitPricePaise * entry.quantity };
+      }
+      const item = menu.get(entry.itemId!);
+      if (!item) throw new Error("A selected menu item is unavailable.");
+      return {
+        id: null, menuItemId: item.id, productId: item.productId, name: item.name,
+        category: item.category, unitPricePaise: item.pricePaise, unitCostPaise: item.costPaise,
+        quantity: entry.quantity, lineTotalPaise: item.pricePaise * entry.quantity,
+      };
+    });
+    const subtotalPaise = lines.reduce((sum, line) => sum + line.lineTotalPaise, 0);
+    const cogsPaise = lines.reduce((sum, line) => sum + line.unitCostPaise * line.quantity, 0);
+    const gstRate = input.gstEnabled ? input.gstRate : 0;
+    const taxPaise = Math.round(subtotalPaise * gstRate / 100);
+    const cgstPaise = Math.floor(taxPaise / 2);
+    const sgstPaise = taxPaise - cgstPaise;
+    const totalPaise = subtotalPaise + taxPaise;
+    if ([subtotalPaise, cogsPaise, totalPaise].some((value) => !Number.isSafeInteger(value) || value > 2147483647)) {
+      throw new Error("Bill total is too large. Reduce the quantities.");
+    }
+
+    await client.query(`
+      UPDATE bills SET customer_name = $1, customer_phone = $2, payment_method = $3,
+        gst_enabled = $4, gst_rate = $5, subtotal_paise = $6, cgst_paise = $7,
+        sgst_paise = $8, total_paise = $9, cogs_paise = $10
+      WHERE id = $11
+    `, [input.customerName.trim(), input.customerPhone.trim(), input.paymentMethod,
+      input.gstEnabled ? 1 : 0, gstRate, subtotalPaise, cgstPaise, sgstPaise, totalPaise, cogsPaise, id]);
+
+    const keptIds = lines.flatMap((line) => line.id == null ? [] : [line.id]);
+    await client.query("DELETE FROM bill_items WHERE bill_id = $1 AND NOT (id = ANY($2::int[]))", [id, keptIds]);
+    for (const line of lines) {
+      if (line.id != null) {
+        await client.query("UPDATE bill_items SET quantity = $1, line_total_paise = $2 WHERE id = $3 AND bill_id = $4",
+          [line.quantity, line.lineTotalPaise, line.id, id]);
+      } else {
+        await client.query(`
+          INSERT INTO bill_items
+            (bill_id, menu_item_id, product_id, name, category, unit_price_paise, unit_cost_paise, quantity, line_total_paise)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `, [id, line.menuItemId, line.productId, line.name, line.category, line.unitPricePaise,
+          line.unitCostPaise, line.quantity, line.lineTotalPaise]);
+      }
+    }
+    await client.query("COMMIT");
+    const bill = mapBill(billResult.rows[0]);
+    return { id: bill.id, billDate: bill.billDate, dailyNumber: bill.dailyNumber, totalPaise };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 export async function createBill(input: {

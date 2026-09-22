@@ -73,6 +73,11 @@ export default function AppHeader() {
           <span>Generate Bill</span>
         </Link>
 
+        <Link className={pathname.startsWith("/bills") ? "active" : ""} href="/bills">
+          <span className="side-nav-icon"><BillIcon /></span>
+          <span>All Bills</span>
+        </Link>
+
         <button className="mobile-signout" type="button" onClick={signOut}>
           <span className="side-nav-icon"><LogoutIcon /></span>
           <span>Sign out</span>

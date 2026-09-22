@@ -360,6 +360,7 @@ export default async function DashboardPage({
                       <td className="number">
                         <div className="bill-row-actions">
                           <Link className="table-link" href={`/receipt/${bill.id}`}>View</Link>
+                          <Link className="table-link" href={`/bills/${bill.id}/edit`}>Edit</Link>
                           <BillDeleteButton billId={bill.id} billNumber={bill.dailyNumber} />
                         </div>
                       </td>

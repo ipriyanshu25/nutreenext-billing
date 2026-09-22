@@ -1403,7 +1403,7 @@ body {
 
 @media (max-width: 650px) {
   .side-nav {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
   }
 
   .mobile-signout {
@@ -1416,4 +1416,21 @@ body {
   .mobile-signout > span:last-child {
     display: block;
   }
+}
+
+.all-bills-filters {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.all-bills-filters .field { flex: 1 1 150px; min-width: 0; }
+.all-bills-filters .all-bills-search { flex: 2 1 280px; }
+
+@media (max-width: 650px) {
+  .side-nav { gap: 2px; }
+  .side-nav a, .mobile-signout { padding-inline: 4px; }
 }

@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import type { BusinessSettings, MenuItem } from "@/lib/db";
+import type { BillRecord } from "@/lib/queries";
 import { formatMoney, makeBillDisplayNumber } from "@/lib/utils";
 
 type BillMeta = {
@@ -12,27 +14,38 @@ type BillMeta = {
   gstRate: number;
 };
 
-export default function BillingClient({ initialItems, settings, initialBillDate, initialNextNumber }: {
+export default function BillingClient({ initialItems, settings, initialBillDate, initialNextNumber, existingBill }: {
   initialItems: MenuItem[];
   settings: BusinessSettings;
   initialBillDate: string;
   initialNextNumber: number;
+  existingBill?: BillRecord;
 }) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
-  const [cart, setCart] = useState<Record<number, number>>({});
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [cart, setCart] = useState<Record<number, number>>(() => Object.fromEntries(
+    (existingBill?.items || []).map((line) => [-line.id, line.quantity]),
+  ));
+  const [checkoutOpen, setCheckoutOpen] = useState(Boolean(existingBill));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [meta, setMeta] = useState<BillMeta>({
-    customerName: "",
-    customerPhone: "",
-    paymentMethod: "Cash",
-    gstEnabled: false,
-    gstRate: settings.defaultGstRate,
+    customerName: existingBill?.customerName || "",
+    customerPhone: existingBill?.customerPhone || "",
+    paymentMethod: (existingBill?.paymentMethod || "Cash") as BillMeta["paymentMethod"],
+    gstEnabled: existingBill?.gstEnabled || false,
+    gstRate: existingBill?.gstEnabled ? existingBill.gstRate : settings.defaultGstRate,
   });
 
-  const items = useMemo(() => initialItems.filter((item) => item.isActive), [initialItems]);
+  const items = useMemo(() => {
+    // Negative UI IDs identify saved bill lines, independently of current menu IDs.
+    const originalItems: MenuItem[] = (existingBill?.items || []).map((line) => ({
+      id: -line.id, productId: line.productId, name: line.name, category: line.category,
+      pricePaise: line.unitPricePaise, costPaise: line.unitCostPaise, isActive: true,
+    }));
+    const originalMenuIds = new Set(existingBill?.items.map((line) => line.menuItemId));
+    return [...originalItems, ...initialItems.filter((item) => item.isActive && !originalMenuIds.has(item.id))];
+  }, [initialItems, existingBill]);
   const categories = useMemo(
     () => ["All", ...Array.from(new Set(items.map((item) => item.category))).sort()],
     [items],
@@ -81,6 +94,7 @@ export default function BillingClient({ initialItems, settings, initialBillDate,
   }
 
   async function completeBill() {
+    if (saving) return;
     if (!cartLines.length) {
       setError("Add at least one item to the bill.");
       return;
@@ -95,12 +109,14 @@ export default function BillingClient({ initialItems, settings, initialBillDate,
     setError("");
 
     try {
-      const response = await fetch("/api/bills", {
-        method: "POST",
+      const response = await fetch(existingBill ? `/api/bills/${encodeURIComponent(existingBill.id)}` : "/api/bills", {
+        method: existingBill ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...meta,
-          items: cartLines.map((line) => ({ itemId: line.item.id, quantity: line.quantity })),
+          items: cartLines.map((line) => line.item.id < 0
+            ? { lineId: -line.item.id, quantity: line.quantity }
+            : { itemId: line.item.id, quantity: line.quantity }),
         }),
       });
 
@@ -110,7 +126,7 @@ export default function BillingClient({ initialItems, settings, initialBillDate,
         return;
       }
 
-      window.location.assign(`/receipt/${data.id}?autoprint=1`);
+      window.location.assign(`/receipt/${encodeURIComponent(existingBill?.id || data.id)}?autoprint=1`);
     } catch {
       setError("Unable to save the bill. Please try again.");
     } finally {
@@ -122,8 +138,11 @@ export default function BillingClient({ initialItems, settings, initialBillDate,
     <main className="page-shell billing-page generate-bill-page">
       <div className="page-heading compact-heading">
         <div>
-          <h1>Generate Bill</h1>
-          <p>Search items, add quantities, then review and print the bill.</p>
+          <h1>{existingBill ? "Edit Bill" : "Generate Bill"}</h1>
+          <p>{existingBill
+            ? `Update ${makeBillDisplayNumber(initialBillDate, initialNextNumber)} and print the updated receipt.`
+            : "Search items, add quantities, then review and print the bill."}</p>
+          {existingBill && <Link className="table-link" href="/bills">Cancel editing</Link>}
         </div>
         <button
           type="button"
@@ -207,7 +226,7 @@ export default function BillingClient({ initialItems, settings, initialBillDate,
           disabled={!itemQty}
           onClick={() => { setError(""); setCheckoutOpen(true); }}
         >
-          Review & Print Bill
+          {existingBill ? "Review Updated Bill" : "Review & Print Bill"}
         </button>
       </div>
 
@@ -216,7 +235,7 @@ export default function BillingClient({ initialItems, settings, initialBillDate,
           <div className="modal checkout-modal" role="dialog" aria-modal="true" aria-label="Current bill">
             <div className="modal-head checkout-head">
               <div>
-                <span className="bill-label">CURRENT BILL</span>
+                <span className="bill-label">{existingBill ? "EDITING SAVED BILL" : "CURRENT BILL"}</span>
                 <h2>Bill #{initialNextNumber}</h2>
                 <small>{makeBillDisplayNumber(initialBillDate, initialNextNumber)}</small>
               </div>
@@ -347,7 +366,7 @@ export default function BillingClient({ initialItems, settings, initialBillDate,
                   disabled={!cartLines.length || saving || (meta.gstEnabled && !settings.gstin.trim())}
                   onClick={completeBill}
                 >
-                  {saving ? "Saving Bill…" : "Save & Print Bill"}
+                  {saving ? "Saving Bill…" : existingBill ? "Update & Print Bill" : "Save & Print Bill"}
                 </button>
               </div>
             </div>
